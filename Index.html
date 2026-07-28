@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Plagiarism & Fake Content Detection System</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- PDF.js and JSZip libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+<style>
+:root {
+  --bg-color:#0f172a;
+  --panel-color:#1e293b;
+  --panel-alt:#334155;
+  --text-color:#ffffff;
+  --muted-color:#94a3b8;
+  --input-bg:#334155;
+  --input-border:#475569;
+  --card-bg:#334155;
+  --login-bg:rgba(255, 255, 255, 0.95);
+  --login-text:#000000;
+  --accent:#05056b;
+  --accent-hover:#051664;
+}
+
+body.light-theme {
+  --bg-color:#f8fafc;
+  --panel-color:#ffffff;
+  --panel-alt:#e2e8f0;
+  --text-color:#0f172a;
+  --muted-color:#475569;
+  --input-bg:#ffffff;
+  --input-border:#cbd5e1;
+  --card-bg:#f8fafc;
+  --login-bg:rgba(255, 255, 255, 0.95);
+  --login-text:#0f172a;
+  --accent:#20015a;
+  --accent-hover:#1e0657;
+}
+
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:Arial,Helvetica,sans-serif;
+  font-weight:600;
+}
+
+body{
+  background:var(--bg-color);
+  color:var(--text-color);
+  transition:background 0.3s ease,color 0.3s ease;
+}
+
+.hidden{ display:none !important; }
+
+.container{
+  width:95%;
+  max-width:1400px;
+  margin:auto;
+  padding:20px;
+}
+
+.loginPage{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+  padding: 20px 0;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(37, 99, 235, 0.75)), 
+              url('https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1920&auto=format&fit=crop') no-repeat center center/cover;
+}
+
+.login-card{
+  width:450px;
+  background:var(--login-bg);
+  color:var(--login-text);
+  padding:35px;
+  border-radius:15px;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);
+  backdrop-filter: blur(8px);
+}
+
+.login-card h1{
+  color:#2563eb;
+  text-align:center;
+  font-weight:700;
+}
+
+.login-card p{
+  text-align:center;
+  margin-top:10px;
+  margin-bottom:20px;
+}
+
+.login-card label{
+  display:block;
+  margin-top:12px;
+  font-weight:bold;
+}
+
+.login-card input,
+.login-card select{
+  width:100%;
+  padding:12px;
+  margin-top:6px;
+  border-radius:8px;
+  border:1px solid #ccc;
+  color:#ffffff;
+  background:#1e293b;
+}
+
+.login-card button{
+  width:100%;
+  padding:14px;
+  margin-top:20px;
+  background:#17013a;
+  border:none;
+  color:white;
+  font-size:17px;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.login-card button:hover{ background:#1d4ed8; }
+
+.nav-tabs{
+  display:flex;
+  gap:10px;
+  margin-bottom:25px;
+  flex-wrap: wrap;
+}
+
+.tab{
+  padding:14px 25px;
+  background:var(--panel-color);
+  cursor:pointer;
+  border-radius:8px;
+}
+
+.active{ background:#11015a; color: #fff; }
+
+.panel{
+  background:var(--panel-color);
+  padding:25px;
+  border-radius:15px;
+  margin-bottom:30px;
+}
+
+.form-group{ margin-bottom:20px; }
+
+label{
+  display:block;
+  margin-bottom:8px;
+  font-weight:700;
+}
+
+input, textarea, select{
+  width:100%;
+  padding:12px;
+  background:var(--input-bg);
+  border:1px solid var(--input-border);
+  color:var(--text-color);
+  border-radius:8px;
+}
+
+button{
+  padding:12px 25px;
+  background:var(--accent);
+  color:white;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.metrics{
+  display:flex;
+  gap:20px;
+  flex-wrap:wrap;
+}
+
+.metric-card{
+  flex:1;
+  min-width:220px;
+  background:var(--card-bg);
+  padding:20px;
+  border-radius:10px;
+  text-align:center;
+}
+
+.metric-card strong{
+  font-size:32px;
+  display:block;
+  margin-top:10px;
+}
+
+table{
+  width:100%;
+  border-collapse:collapse;
+}
+
+th,td{
+  padding:15px;
+  border-bottom:1px solid #475569;
+  text-align: left;
+}
+
+th{ background:var(--panel-alt); }
+
+.progress{
+  height:18px;
+  background:#475569;
+  border-radius:10px;
+  overflow:hidden;
+}
+
+.progress-bar{
+  height:100%;
+  width:0%;
+  background:#2563eb;
+  transition: width 0.4s ease;
+}
+
+.feedback-card {
+  background: var(--card-bg);
+  padding: 20px;
+  border-radius: 10px;
+  border-left: 5px solid #2563eb;
+  margin-bottom: 20px;
+}
+
+.toggle-auth {
+  color: #2563eb;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: 14px;
+  text-align: center;
+  display: block;
+  margin-top: 15px;
+}
+
+.code-btn {
+  margin-top: 8px;
+  padding: 10px 14px;
+  background: #2563eb;
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  color: white;
+  width: 100%;
+}
+
+.chart-bar-container {
+  display: flex;
+  align-items: flex-end;
+  gap: 15px;
+  height: 180px;
+  padding-top: 20px;
+  border-bottom: 2px solid var(--input-border);
+}
+.chart-bar {
+  flex: 1;
+  background: #2563eb;
+  border-top-left-radius: 6px;
+  border-top-right-radius: 6px;
+  position: relative;
+  transition: height 0.5s ease;
+}
+.chart-bar span {
+  position: absolute;
+  top: -25px;
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted-color);
+}
+.chart-label {
+  text-align: center;
+  font-size: 12px;
+  margin-top: 8px;
+  color: var(--muted-color);
+}
+
+.btn-secondary {
+  background-color: #475569;
+}
+.btn-secondary:hover {
+  background-color: #334155;
+}
+
+.btn-danger {
+  background-color: #ef4444;
+}
+.btn-danger:hover {
+  background-color: #dc2626;
+}
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage" class="loginPage">
+  <div class="login-card" id="loginCard">
+    <h1>AI Plagiarism & Fake Content Detection System</h1>
+    <p>Select your user role to enter the portal</p>
+
+    <label>Login As</label>
+    <select id="role">
+      <option value="student">Student</option>
+      <option value="lecturer">Lecturer</option>
+      <option value="admin">Administrator</option>
+    </select>
+
+    <label>University Email</label>
+    <input type="email" id="loginEmail" placeholder="e.g. alex.johnson@university.edu">
+
+    <label>Matriculation / Staff ID</label>
+    <input type="text" id="loginMatric" placeholder="e.g. UNI/2024/CSC/001">
+
+    <button onclick="loginUser()">Login</button>
+    <span class="toggle-auth" onclick="toggleAuthMode('signup')">Don't have an account? Sign Up</span>
+  </div>
+
+  <div class="login-card hidden" id="signupCard">
+    <h1>Create Account</h1>
+    <p>Register your account in the system</p>
+
+    <label>Account Role</label>
+    <select id="signupRole">
+      <option value="student">Student</option>
+      <option value="lecturer">Lecturer</option>
+      <option value="admin">Administrator</option>
+    </select>
+
+    <label>Full Name</label>
+    <input type="text" id="signupName" placeholder="e.g. Alex Johnson">
+
+    <label>Matriculation / Staff ID</label>
+    <input type="text" id="signupMatric" placeholder="e.g. UNI/2024/CSC/001">
+
+    <label>University Email</label>
+    <input type="email" id="signupEmail" placeholder="e.g. alex.johnson@university.edu">
+
+    <button onclick="requestVerificationCode()">Send Verification Code</button>
+    <span class="toggle-auth" onclick="toggleAuthMode('login')">Already registered? Log In</span>
+  </div>
+
+  <div class="login-card hidden" id="verifyCard">
+    <h1>Verify Email Code</h1>
+    <p id="verifyInstructions">Enter the 5-digit verification code sent to your email.</p>
+
+    <label>5-Digit Code</label>
+    <input type="text" id="verifyCode" maxlength="5" placeholder="Enter 5-digit code">
+
+    <button onclick="completeRegistration()">Verify & Complete Registration</button>
+    <button type="button" class="code-btn" onclick="requestVerificationCode()">Resend Code</button>
+    <span class="toggle-auth" onclick="toggleAuthMode('signup')">Back to Sign Up</span>
+  </div>
+</div>
+
+<!-- MAIN SYSTEM PORTAL -->
+<div id="system" class="hidden">
+  <div class="container">
+    <div class="nav-tabs">
+      <!-- STUDENT NAVIGATION -->
+      <div id="tabStudentSubmit" class="tab active" onclick="switchTab(0)">Upload Document</div>
+      <div id="tabStudentReports" class="tab" onclick="switchTab(1)">View Personal Report</div>
+      <div id="tabStudentAnalytics" class="tab" onclick="switchTab(2)">View Own Analytics</div>
+
+      <!-- LECTURER NAVIGATION -->
+      <div id="tabLecturerUpload" class="tab" onclick="switchTab(3)">Upload Document</div>
+      <div id="tabLecturerReports" class="tab" onclick="switchTab(4)">View Detection Reports</div>
+      <div id="tabLecturerAnalytics" class="tab" onclick="switchTab(5)">View Class Analytics</div>
+
+      <!-- ADMINISTRATOR NAVIGATION -->
+      <div id="tabAdminUsers" class="tab" onclick="switchTab(6)">Manage Users</div>
+      <div id="tabAdminAnalytics" class="tab" onclick="switchTab(7)">View University Analytics</div>
+
+      <div style="margin-left:auto; display:flex; gap:10px; align-items:center;">
+        <span id="userBadge" style="font-size: 14px; color: var(--muted-color); margin-right: 10px;"></span>
+        <button onclick="toggleTheme()" id="themeToggle">LIGHT</button>
+        <button onclick="logout()">Logout</button>
+      </div>
+    </div>
+
+    <!-- STUDENT: UPLOAD DOCUMENT -->
+    <div id="studentUploadPage">
+      <div class="panel">
+        <h1>Student: Upload Document</h1>
+        <p style="color:var(--muted-color); margin-bottom: 20px;">Upload your coursework document for AI plagiarism and fake content inspection.</p>
+
+        <div class="form-group">
+          <label>Student Name</label>
+          <input id="studentName" readonly>
+        </div>
+
+        <div class="form-group">
+          <label>Matriculation Number</label>
+          <input id="studentMatric" readonly>
+        </div>
+
+        <div class="form-group">
+          <label>Course Code & Title</label>
+          <input id="course" placeholder="e.g. CSC 401 - Artificial Intelligence">
+        </div>
+
+        <div class="form-group">
+          <label>Upload Document (.txt, .pdf, .docx)</label>
+          <input type="file" id="documentUpload" accept=".txt,.pdf,.docx">
+        </div>
+
+        <div class="form-group">
+          <label>Document Content</label>
+          <textarea rows="10" id="studentText" placeholder="Upload a document or paste content here..."></textarea>
+        </div>
+
+        <button onclick="submitAssignment()">Upload & Submit Document</button>
+      </div>
+    </div>
+
+    <!-- STUDENT: VIEW PERSONAL REPORT -->
+    <div id="studentReportsPage" class="hidden">
+      <div class="panel">
+        <h1>Personal Detection Reports & Lecturer Reviews</h1>
+        <p style="color:var(--muted-color); margin-bottom: 20px;">View individual inspection results and lecturer comments on your submitted work.</p>
+        <div id="studentFeedbackList"></div>
+      </div>
+    </div>
+
+    <!-- STUDENT: VIEW OWN ANALYTICS -->
+    <div id="studentAnalyticsPage" class="hidden">
+      <div class="panel">
+        <h1>View Own Analytics</h1>
+        <p style="color:var(--muted-color); margin-bottom: 20px;">Personal integrity tracking, historical scores, and submission statistics.</p>
+        
+        <div class="metrics" style="margin-bottom: 25px;">
+          <div class="metric-card">
+            <span>Total Submissions</span>
+            <strong id="stOwnTotalSubs">0</strong>
+          </div>
+          <div class="metric-card">
+            <span>Avg. AI Similarity Score</span>
+            <strong style="color:#2563eb;" id="stOwnAvgAi">0%</strong>
+          </div>
+          <div class="metric-card">
+            <span>Clean / Low Risk Ratio</span>
+            <strong style="color:#22c55e;" id="stOwnCleanRatio">100%</strong>
+          </div>
+        </div>
+
+        <h3>Personal Submission History</h3>
+        <br>
+        <table>
+          <thead>
+            <tr>
+              <th>Course</th>
+              <th>Similarity Score</th>
+              <th>AI Score</th>
+              <th>Risk Status</th>
+              <th>Review Status</th>
+            </tr>
+          </thead>
+          <tbody id="studentOwnHistoryTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- LECTURER: UPLOAD DOCUMENT -->
+    <div id="lecturerUploadPage" class="hidden">
+      <div class="panel">
+        <h1>Lecturer: Direct Document Analysis Upload</h1>
+        <p style="color:var(--muted-color); margin-bottom: 20px;">Directly upload any paper or student document to perform instant plagiarism and AI detection.</p>
+
+        <div class="form-group">
+          <label>Reference Title / Paper Title</label>
+          <input id="lecDocTitle" placeholder="e.g. Sample Submission Analysis">
+        </div>
+
+        <div class="form-group">
+          <label>Course Name</label>
+          <input id="lecCourseName" placeholder="e.g. CSC 401 - Artificial Intelligence">
+        </div>
+
+        <div class="form-group">
+          <label>Upload File (.txt, .pdf, .docx)</label>
+          <input type="file" id="lecFileUpload" accept=".txt,.pdf,.docx">
+        </div>
+
+        <div class="form-group">
+          <label>Paper Content</label>
+          <textarea rows="8" id="lecTextContent" placeholder="Content from file will appear here or paste directly..."></textarea>
+        </div>
+
+        <button onclick="lecturerDirectAnalyze()">Run Instant Detection</button>
+      </div>
+    </div>
+
+    <!-- LECTURER: VIEW DETECTION REPORTS -->
+    <div id="lecturerReportsPage" class="hidden">
+      <div class="panel">
+        <h1>Lecturer: View Detection Reports</h1>
+        <p style="color:var(--muted-color); margin-bottom: 20px;">Inspect uploaded documents, analyze AI plagiarism flags, and generate evaluation summaries.</p>
+
+        <div class="metrics" style="margin-bottom: 20px;">
+          <div class="metric-card">
+            <span>Total Submissions</span>
+            <strong id="totalSubmissions">0</strong>
+          </div>
+          <div class="metric-card">
+            <span>High Risk</span>
+            <strong style="color:#ef4444;" id="highRiskCount">0</strong>
+          </div>
+          <div class="metric-card">
+            <span>Medium Risk</span>
+            <strong style="color:#f59e0b;" id="mediumRiskCount">0</strong>
+          </div>
+          <div class="metric-card">
+            <span>Low Risk</span>
+            <strong style="color:#22c55e;" id="lowRiskCount">0</strong>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Search Submissions</label>
+          <input type="text" id="studentSearch" placeholder="Search by student name, matric number, or course..." onkeyup="filterSubmissions()">
+        </div>
+        <br>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th>Matric No.</th>
+              <th>Course</th>
+              <th>Similarity</th>
+              <th>AI Score</th>
+              <th>Risk</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="studentTable"></tbody>
+        </table>
+      </div>
+
+      <!-- DETAILED DETECTION REPORT VIEW -->
+      <div id="results" class="panel hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h2 id="analyzingStudentHeader">Detection Report</h2>
+          <button class="btn-secondary" onclick="generateReport('Detection Report')">Generate Report (Print/PDF)</button>
+        </div>
+        <p style="color:var(--muted-color); margin-top:4px; margin-bottom:20px;" id="analyzingStudentSubhead">Breakdown of content evaluation</p>
+
+        <div class="metrics" style="margin-bottom:20px;">
+          <div class="metric-card">
+            <span>Plagiarism Similarity</span>
+            <strong id="similarityValue">0%</strong>
+          </div>
+          <div class="metric-card">
+            <span>AI Generated Score</span>
+            <strong id="aiProbability">0%</strong>
+          </div>
+          <div class="metric-card">
+            <span>Authentic Human Content</span>
+            <strong id="humanProbability">100%</strong>
+          </div>
+          <div class="metric-card">
+            <span>Risk Assessment</span>
+            <strong id="riskLevel">LOW</strong>
+          </div>
+        </div>
+
+        <h3>AI Detection Confidence</h3>
+        <br>
+        <div class="progress">
+          <div id="confidenceBar" class="progress-bar"></div>
+        </div>
+        <br>
+
+        <h3>Submitted Document Preview</h3>
+        <br>
+        <textarea rows="8" id="submissionPreviewText" readonly></textarea>
+        <br><br>
+
+        <div style="background:var(--panel-alt); padding:20px; border-radius:10px;">
+          <h3>Lecturer Remarks & Instructions</h3>
+          <p style="color:var(--muted-color); margin-bottom:15px;">Add remarks before returning feedback to the student.</p>
+          
+          <div class="form-group">
+            <textarea rows="4" id="lecturerReviewText" placeholder="Enter remarks or required revision guidance..."></textarea>
+          </div>
+          <button onclick="sendFeedbackToStudent()">Send Feedback to Student</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LECTURER: VIEW CLASS ANALYTICS -->
+    <div id="lecturerAnalyticsPage" class="hidden">
+      <div class="panel">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h1>Class Analytics Dashboard</h1>
+          <button class="btn-secondary" onclick="generateReport('Class Analytics Summary')">Generate Report</button>
+        </div>
+        <p style="color:var(--muted-color); margin-bottom: 20px;">Class-wide integrity trends, plagiarism distribution, and submission metrics.</p>
+
+        <div class="form-group" style="max-width: 300px;">
+          <label>Filter Analytics by Course</label>
+          <select id="analyticsCourseFilter" onchange="renderAnalytics()">
+            <option value="ALL">All Courses</option>
+            <option value="CSC 401">CSC 401 - Artificial Intelligence</option>
+            <option value="EEE 310">EEE 310 - Circuit Theory II</option>
+            <option value="ENG 202">ENG 202 - Modern Literature</option>
+          </select>
+        </div>
+        <br>
+
+        <div class="metrics" style="margin-bottom: 30px;">
+          <div class="metric-card">
+            <span>Active Enrolled Cohort</span>
+            <strong id="analyticsTotalStudents">0</strong>
+          </div>
+          <div class="metric-card">
+            <span>Class On-Time Submission</span>
+            <strong style="color:#22c55e;" id="analyticsOnTimeRate">95.0%</strong>
+          </div>
+          <div class="metric-card">
+            <span>Avg. AI Score</span>
+            <strong style="color:#f59e0b;" id="analyticsAvgAiScore">0%</strong>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 30px;">
+          <div style="flex: 1; min-width: 300px; background: var(--panel-alt); padding: 20px; border-radius: 12px;">
+            <h3>Class Integrity Risk Breakdown</h3>
+            <p style="color:var(--muted-color); font-size: 13px; margin-bottom: 20px;">Distribution of scanned class coursework</p>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px;">
+                  <span>Low Risk (Authentic)</span>
+                  <span id="pctLowRisk" style="color:#22c55e;">0%</span>
+                </div>
+                <div class="progress"><div id="barLowRisk" class="progress-bar" style="width: 0%; background:#22c55e;"></div></div>
+              </div>
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px;">
+                  <span>Medium Risk (Review Recommended)</span>
+                  <span id="pctMedRisk" style="color:#f59e0b;">0%</span>
+                </div>
+                <div class="progress"><div id="barMedRisk" class="progress-bar" style="width: 0%; background:#f59e0b;"></div></div>
+              </div>
+              <div>
+                <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px;">
+                  <span>High Risk (Flagged)</span>
+                  <span id="pctHighRisk" style="color:#ef4444;">0%</span>
+                </div>
+                <div class="progress"><div id="barHighRisk" class="progress-bar" style="width: 0%; background:#ef4444;"></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h3>Class Engagement & Integrity Overview</h3>
+        <br>
+        <table>
+          <thead>
+            <tr>
+              <th>Student Name</th>
+              <th>Matriculation ID</th>
+              <th>Submissions</th>
+              <th>Avg AI Score</th>
+              <th>Last Active</th>
+            </tr>
+          </thead>
+          <tbody id="analyticsStudentTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ADMINISTRATOR: MANAGE USERS -->
+    <div id="adminUsersPage" class="hidden">
+      <div class="panel">
+        <h1>Administrator: Manage Users</h1>
+        <p style="color:var(--muted-color); margin-bottom:20px;">Manage registered accounts, grant roles, and remove credentials.</p>
+        
+        <div class="metrics" style="margin-bottom: 25px;">
+          <div class="metric-card"><span>Total Registered Users</span><strong id="adminTotalUsers">0</strong></div>
+          <div class="metric-card"><span>Students</span><strong id="adminStudentCount">0</strong></div>
+          <div class="metric-card"><span>Lecturers</span><strong id="adminLecturerCount">0</strong></div>
+          <div class="metric-card"><span>Administrators</span><strong id="adminAdminCount">0</strong></div>
+        </div>
+
+        <h3>User Database</h3>
+        <br>
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Matric / Staff ID</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="adminUserTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ADMINISTRATOR: VIEW UNIVERSITY ANALYTICS -->
+    <div id="adminAnalyticsPage" class="hidden">
+      <div class="panel">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h1>University Integrity Analytics</h1>
+          <button class="btn-secondary" onclick="generateReport('University Executive Report')">Generate Report</button>
+        </div>
+        <p style="color:var(--muted-color); margin-bottom:20px;">System-wide statistics and overall university compliance monitoring.</p>
+
+        <div class="metrics" style="margin-bottom: 25px;">
+          <div class="metric-card">
+            <span>Total Evaluated Submissions</span>
+            <strong id="uniTotalSubmissions">0</strong>
+          </div>
+          <div class="metric-card">
+            <span>Overall Campus Integrity Score</span>
+            <strong style="color:#22c55e;">91.4%</strong>
+          </div>
+          <div class="metric-card">
+            <span>System Status</span>
+            <strong style="color:#22c55e;">Active & Operational</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+if (window.pdfjsLib) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+}
+
+let currentRole = null;
+let loggedInUser = null;
+let currentActiveSubmissionId = null;
+let pendingRegistration = null;
+
+const usersDatabase = [
+  { name: "Alex Johnson", matric: "UNI/2024/CSC/001", email: "alex.johnson@university.edu", role: "student", lastActive: "Today, 10:14 AM" },
+  { name: "Sophia Williams", matric: "UNI/2024/CSC/014", email: "sophia.w@university.edu", role: "student", lastActive: "Yesterday, 3:45 PM" },
+  { name: "David Chen", matric: "UNI/2024/EEE/032", email: "david.chen@university.edu", role: "student", lastActive: "2 days ago" },
+  { name: "Dr. Robert Vance", matric: "FAC/LEC/102", email: "r.vance@university.edu", role: "lecturer", lastActive: "Today, 11:30 AM" },
+  { name: "System Admin", matric: "ADMIN/001", email: "admin@university.edu", role: "admin", lastActive: "Active Now" }
+];
+
+let submissionsDatabase = [
+  {
+    id: 1,
+    name: "Alex Johnson",
+    matric: "UNI/2024/CSC/001",
+    course: "CSC 401 - Artificial Intelligence",
+    text: "Artificial Intelligence (AI) refers to the simulation of human intelligence in machines programmed to think and learn.",
+    similarity: 12,
+    ai: 88,
+    risk: "High",
+    analyzed: true,
+    feedback: "High AI content detected. Please revise section 2.",
+    returned: true
+  }
+];
+
+function generate5DigitCode(){
+  return Math.floor(10000 + Math.random() * 90000).toString();
+}
+
+function toggleAuthMode(mode){
+  document.getElementById("loginCard").classList.add("hidden");
+  document.getElementById("signupCard").classList.add("hidden");
+  document.getElementById("verifyCard").classList.add("hidden");
+
+  if(mode === 'signup'){
+    document.getElementById("signupCard").classList.remove("hidden");
+  } else if(mode === 'verify') {
+    document.getElementById("verifyCard").classList.remove("hidden");
+  } else {
+    document.getElementById("loginCard").classList.remove("hidden");
+  }
+}
+
+function sendEmailVerificationCode(email, code){
+  alert(`Verification code sent to ${email}!\n\n(Simulated Code: ${code})`);
+}
+
+function requestVerificationCode(){
+  const role = document.getElementById("signupRole").value;
+  const name = document.getElementById("signupName").value.trim();
+  const matric = document.getElementById("signupMatric").value.trim();
+  const email = document.getElementById("signupEmail").value.trim().toLowerCase();
+
+  if(!name || !matric || !email){
+    alert("Please fill in all registration fields.");
+    return;
+  }
+
+  const existingEmail = usersDatabase.find(u => u.email.toLowerCase() === email);
+  if(existingEmail){
+    alert("An account with this email already exists. Please log in.");
+    return;
+  }
+
+  const generatedCode = generate5DigitCode();
+  pendingRegistration = { role, name, matric, email, code: generatedCode };
+  sendEmailVerificationCode(email, generatedCode);
+  toggleAuthMode('verify');
+}
+
+function completeRegistration(){
+  const inputCode = document.getElementById("verifyCode").value.trim();
+
+  if(!pendingRegistration || inputCode !== pendingRegistration.code){
+    alert("Incorrect verification code.");
+    return;
+  }
+
+  usersDatabase.push({
+    role: pendingRegistration.role,
+    name: pendingRegistration.name,
+    matric: pendingRegistration.matric,
+    email: pendingRegistration.email,
+    lastActive: "Just now"
+  });
+
+  alert("Registration successful! You can now log in.");
+  document.getElementById("role").value = pendingRegistration.role;
+  document.getElementById("loginEmail").value = pendingRegistration.email;
+  document.getElementById("loginMatric").value = pendingRegistration.matric;
+
+  pendingRegistration = null;
+  document.getElementById("verifyCode").value = "";
+  toggleAuthMode('login');
+}
+
+function loginUser(){
+  const role = document.getElementById("role").value;
+  const email = document.getElementById("loginEmail").value.trim().toLowerCase();
+  const matric = document.getElementById("loginMatric").value.trim().toLowerCase();
+
+  const user = usersDatabase.find(u => 
+    u.role === role && 
+    u.matric.toLowerCase() === matric && 
+    u.email.toLowerCase() === email
+  );
+
+  if(!user){
+    alert("Account not found. Please check your credentials.");
+    return;
+  }
+
+  loggedInUser = user;
+  startSession(user);
+}
+
+function startSession(user){
+  document.getElementById("loginPage").classList.add("hidden");
+  document.getElementById("system").classList.remove("hidden");
+  document.getElementById("userBadge").innerText = `Logged in: ${user.name} (${user.role.toUpperCase()})`;
+
+  setRoleAccess(user.role);
+
+  if (user.role === "student") {
+    document.getElementById("studentName").value = user.name;
+    document.getElementById("studentMatric").value = user.matric;
+    switchTab(0);
+  } else if (user.role === "lecturer") {
+    switchTab(3);
+  } else {
+    switchTab(6);
+  }
+}
+
+function setRoleAccess(role){
+  currentRole = role;
+  
+  // Tab indexes:
+  // [0: St Submit, 1: St Report, 2: St Analytics, 3: Lec Upload, 4: Lec Reports, 5: Lec Analytics, 6: Adm Users, 7: Adm Analytics]
+  const allowed = {
+    student:  [true,  true,  true,  false, false, false, false, false],
+    lecturer: [false, false, false, true,  true,  true,  false, false],
+    admin:    [false, false, false, false, false, false, true,  true]
+  };
+
+  const mask = allowed[role] || [false, false, false, false, false, false, false, false];
+
+  document.getElementById("tabStudentSubmit").classList.toggle("hidden", !mask[0]);
+  document.getElementById("tabStudentReports").classList.toggle("hidden", !mask[1]);
+  document.getElementById("tabStudentAnalytics").classList.toggle("hidden", !mask[2]);
+
+  document.getElementById("tabLecturerUpload").classList.toggle("hidden", !mask[3]);
+  document.getElementById("tabLecturerReports").classList.toggle("hidden", !mask[4]);
+  document.getElementById("tabLecturerAnalytics").classList.toggle("hidden", !mask[5]);
+
+  document.getElementById("tabAdminUsers").classList.toggle("hidden", !mask[6]);
+  document.getElementById("tabAdminAnalytics").classList.toggle("hidden", !mask[7]);
+}
+
+function toggleTheme(){
+  const isLight = document.body.classList.toggle("light-theme");
+  document.getElementById("themeToggle").innerText = isLight ? "DARK" : "LIGHT";
+}
+
+function logout(){
+  document.getElementById("system").classList.add("hidden");
+  document.getElementById("loginPage").classList.remove("hidden");
+  document.getElementById("results").classList.add("hidden");
+  currentRole = null;
+  loggedInUser = null;
+}
+
+function switchTab(page){
+  const pages = [
+    "studentUploadPage", "studentReportsPage", "studentAnalyticsPage",
+    "lecturerUploadPage", "lecturerReportsPage", "lecturerAnalyticsPage",
+    "adminUsersPage", "adminAnalyticsPage"
+  ];
+
+  const tabs = [
+    "tabStudentSubmit", "tabStudentReports", "tabStudentAnalytics",
+    "tabLecturerUpload", "tabLecturerReports", "tabLecturerAnalytics",
+    "tabAdminUsers", "tabAdminAnalytics"
+  ];
+
+  pages.forEach(p => document.getElementById(p).classList.add("hidden"));
+  tabs.forEach(t => document.getElementById(t).classList.remove("active"));
+
+  document.getElementById(pages[page]).classList.remove("hidden");
+  document.getElementById(tabs[page]).classList.add("active");
+
+  if(page === 1) renderStudentFeedback();
+  if(page === 2) renderStudentOwnAnalytics();
+  if(page === 4) renderLecturerTable();
+  if(page === 5) renderAnalytics();
+  if(page === 6) renderAdminUsers();
+  if(page === 7) renderUniversityAnalytics();
+}
+
+// FILE extraction handler for upload inputs
+function attachFileHandler(inputId, textId){
+  document.getElementById(inputId).addEventListener("change", async function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+
+    const extension = (file.name.split(".").pop() || "").toLowerCase();
+    const textBox = document.getElementById(textId);
+    textBox.value = "Extracting document content...";
+
+    try {
+      if(extension === "pdf"){
+        const fileReader = new FileReader();
+        fileReader.onload = async function() {
+          const typedarray = new Uint8Array(this.result);
+          const pdf = await pdfjsLib.getDocument({ data: typedarray }).promise;
+          let extractedText = "";
+
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const tokenized = await page.getTextContent();
+            extractedText += tokenized.items.map(item => item.str).join(" ") + "\n\n";
+          }
+          textBox.value = extractedText.trim() || "No text extracted.";
+        };
+        fileReader.readAsArrayBuffer(file);
+      } else if(extension === "docx"){
+        const zip = await JSZip.loadAsync(file);
+        const xml = await zip.file("word/document.xml")?.async("string");
+        textBox.value = xml ? xml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "No text found.";
+      } else {
+        textBox.value = await file.text();
+      }
+    } catch(err){
+      alert("Could not process file directly. Please paste text.");
+      textBox.value = "";
+    }
+  });
+}
+
+attachFileHandler("documentUpload", "studentText");
+attachFileHandler("lecFileUpload", "lecTextContent");
+
+function submitAssignment(){
+  const course = document.getElementById("course").value.trim();
+  const text = document.getElementById("studentText").value.trim();
+
+  if(!course || !text){
+    alert("Please provide course information and document content.");
+    return;
+  }
+
+  submissionsDatabase.push({
+    id: Date.now(),
+    name: loggedInUser.name,
+    matric: loggedInUser.matric,
+    course: course,
+    text: text,
+    similarity: "Pending",
+    ai: "Pending",
+    risk: "Pending",
+    analyzed: false,
+    feedback: "",
+    returned: false
+  });
+
+  alert("Document successfully uploaded and submitted!");
+  document.getElementById("course").value = "";
+  document.getElementById("studentText").value = "";
+  document.getElementById("documentUpload").value = "";
+}
+
+function lecturerDirectAnalyze(){
+  const title = document.getElementById("lecDocTitle").value.trim();
+  const course = document.getElementById("lecCourseName").value.trim();
+  const text = document.getElementById("lecTextContent").value.trim();
+
+  if(!text){
+    alert("Please select a file or paste document content.");
+    return;
+  }
+
+  const newSub = {
+    id: Date.now(),
+    name: title || "Direct Upload",
+    matric: "FAC/DIRECT",
+    course: course || "General Inspection",
+    text: text,
+    similarity: Math.floor(Math.random() * 30) + 5,
+    ai: Math.floor(Math.random() * 60) + 10,
+    risk: "Low",
+    analyzed: true,
+    feedback: "",
+    returned: false
+  };
+
+  newSub.risk = (newSub.ai >= 70 || newSub.similarity >= 40) ? "High" : (newSub.ai >= 35 ? "Medium" : "Low");
+  submissionsDatabase.push(newSub);
+
+  alert("Document uploaded and analyzed successfully!");
+  document.getElementById("lecDocTitle").value = "";
+  document.getElementById("lecCourseName").value = "";
+  document.getElementById("lecTextContent").value = "";
+  document.getElementById("lecFileUpload").value = "";
+
+  switchTab(4);
+  analyzeAndReview(newSub.id);
+}
+
+function renderStudentFeedback(){
+  const container = document.getElementById("studentFeedbackList");
+  container.innerHTML = "";
+
+  const mySubs = submissionsDatabase.filter(
+    s => s.matric.toLowerCase() === loggedInUser.matric.toLowerCase()
+  );
+
+  if(mySubs.length === 0){
+    container.innerHTML = "<p style='color:var(--muted-color);'>No documents or reports found for your account.</p>";
+    return;
+  }
+
+  mySubs.forEach(item => {
+    const card = document.createElement("div");
+    card.className = "feedback-card";
+    card.innerHTML = `
+      <h3>${item.course} - ${item.analyzed ? 'Evaluation Complete' : 'Under Review'}</h3>
+      <p style="color:var(--muted-color); font-size:13px; margin-top:4px;">Matric: ${item.matric}</p>
+      <div style="margin-top:10px;">
+        <span style="font-weight:bold;">Similarity:</span> ${item.analyzed ? item.similarity + '%' : 'Pending'} | 
+        <span style="font-weight:bold;">AI Score:</span> ${item.analyzed ? item.ai + '%' : 'Pending'}
+      </div>
+      <div style="margin-top:12px; background:var(--panel-color); padding:12px; border-radius:8px;">
+        <label style="color:var(--muted-color);">Lecturer Review Remarks:</label>
+        <p style="color:var(--text-color); margin-top:5px; font-weight: normal;">${item.feedback || 'No comments returned yet.'}</p>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function renderStudentOwnAnalytics(){
+  const mySubs = submissionsDatabase.filter(
+    s => s.matric.toLowerCase() === loggedInUser.matric.toLowerCase()
+  );
+
+  const analyzed = mySubs.filter(s => s.analyzed);
+  let avgAi = 0;
+  if(analyzed.length > 0){
+    avgAi = Math.round(analyzed.reduce((acc, curr) => acc + curr.ai, 0) / analyzed.length);
+  }
+
+  document.getElementById("stOwnTotalSubs").innerText = mySubs.length;
+  document.getElementById("stOwnAvgAi").innerText = avgAi + "%";
+
+  const tbody = document.getElementById("studentOwnHistoryTable");
+  tbody.innerHTML = "";
+
+  mySubs.forEach(s => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${s.course}</td>
+      <td>${s.analyzed ? s.similarity + '%' : 'Pending'}</td>
+      <td>${s.analyzed ? s.ai + '%' : 'Pending'}</td>
+      <td><span style="color: ${s.risk === 'High' ? '#ef4444' : s.risk === 'Medium' ? '#f59e0b' : '#22c55e'}">${s.risk}</span></td>
+      <td>${s.returned ? 'Reviewed' : 'In Process'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderLecturerTable(data = submissionsDatabase){
+  const tbody = document.getElementById("studentTable");
+  tbody.innerHTML = "";
+
+  let highCount = 0, medCount = 0, lowCount = 0;
+
+  data.forEach((sub) => {
+    if(sub.analyzed){
+      if(sub.risk === "High") highCount++;
+      else if(sub.risk === "Medium") medCount++;
+      else if(sub.risk === "Low") lowCount++;
+    }
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${sub.name}</td>
+      <td>${sub.matric}</td>
+      <td>${sub.course}</td>
+      <td>${sub.analyzed ? sub.similarity + '%' : 'Pending'}</td>
+      <td>${sub.analyzed ? sub.ai + '%' : 'Pending'}</td>
+      <td><span style="color: ${sub.risk === 'High' ? '#ef4444' : sub.risk === 'Medium' ? '#f59e0b' : sub.risk === 'Low' ? '#22c55e' : 'inherit'}">${sub.risk}</span></td>
+      <td>${sub.returned ? 'Returned' : sub.analyzed ? 'Analyzed' : 'Pending'}</td>
+      <td>
+        <button onclick="analyzeAndReview(${sub.id})">
+          ${sub.analyzed ? 'View Report' : 'Run Detection'}
+        </button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("totalSubmissions").innerText = data.length;
+  document.getElementById("highRiskCount").innerText = highCount;
+  document.getElementById("mediumRiskCount").innerText = medCount;
+  document.getElementById("lowRiskCount").innerText = lowCount;
+}
+
+function filterSubmissions(){
+  const query = document.getElementById("studentSearch").value.toLowerCase();
+  const filtered = submissionsDatabase.filter(s => 
+    s.name.toLowerCase().includes(query) || 
+    s.matric.toLowerCase().includes(query) || 
+    s.course.toLowerCase().includes(query)
+  );
+  renderLecturerTable(filtered);
+}
+
+function analyzeAndReview(id){
+  const item = submissionsDatabase.find(s => s.id === id);
+  if(!item) return;
+
+  currentActiveSubmissionId = id;
+
+  if(!item.analyzed){
+    item.similarity = Math.floor(Math.random() * 40) + 5;
+    item.ai = Math.floor(Math.random() * 60) + 10;
+    item.analyzed = true;
+    item.risk = (item.ai >= 70 || item.similarity >= 40) ? "High" : (item.ai >= 35 ? "Medium" : "Low");
+    renderLecturerTable();
+  }
+
+  document.getElementById("analyzingStudentHeader").innerText = `Detection Report: ${item.name}`;
+  document.getElementById("analyzingStudentSubhead").innerText = `Course: ${item.course} | ID: ${item.matric}`;
+
+  document.getElementById("similarityValue").innerText = item.similarity + "%";
+  document.getElementById("aiProbability").innerText = item.ai + "%";
+  document.getElementById("humanProbability").innerText = (100 - item.ai) + "%";
+  
+  const riskElem = document.getElementById("riskLevel");
+  riskElem.innerText = item.risk.toUpperCase();
+  riskElem.style.color = item.risk === "High" ? "#ef4444" : item.risk === "Medium" ? "#f59e0b" : "#22c55e";
+
+  const confBar = document.getElementById("confidenceBar");
+  confBar.style.width = item.ai + "%";
+  confBar.style.background = item.risk === "High" ? "#ef4444" : item.risk === "Medium" ? "#f59e0b" : "#22c55e";
+
+  document.getElementById("submissionPreviewText").value = item.text;
+  document.getElementById("lecturerReviewText").value = item.feedback || "";
+  document.getElementById("results").classList.remove("hidden");
+  document.getElementById("results").scrollIntoView({ behavior: 'smooth' });
+}
+
+function sendFeedbackToStudent(){
+  if(!currentActiveSubmissionId) return;
+  const item = submissionsDatabase.find(s => s.id === currentActiveSubmissionId);
+  if(!item) return;
+
+  item.feedback = document.getElementById("lecturerReviewText").value.trim();
+  item.returned = true;
+  alert(`Report and remarks sent to ${item.name}!`);
+  renderLecturerTable();
+}
+
+function renderAnalytics(){
+  const filter = document.getElementById("analyticsCourseFilter").value;
+  const students = usersDatabase.filter(u => u.role === 'student');
+  document.getElementById("analyticsTotalStudents").innerText = students.length;
+
+  let filteredSubs = submissionsDatabase;
+  if(filter !== "ALL"){
+    filteredSubs = submissionsDatabase.filter(s => s.course.toLowerCase().includes(filter.toLowerCase()));
+  }
+
+  const analyzedSubs = filteredSubs.filter(s => s.analyzed);
+  let avgAi = 0, high = 0, med = 0, low = 0;
+
+  if(analyzedSubs.length > 0){
+    avgAi = Math.round(analyzedSubs.reduce((acc, curr) => acc + curr.ai, 0) / analyzedSubs.length);
+
+    analyzedSubs.forEach(s => {
+      if(s.risk === "High") high++;
+      else if(s.risk === "Medium") med++;
+      else low++;
+    });
+
+    const highPct = Math.round((high / analyzedSubs.length) * 100);
+    const medPct = Math.round((med / analyzedSubs.length) * 100);
+    const lowPct = 100 - (highPct + medPct);
+
+    document.getElementById("pctHighRisk").innerText = highPct + "%";
+    document.getElementById("barHighRisk").style.width = highPct + "%";
+    document.getElementById("pctMedRisk").innerText = medPct + "%";
+    document.getElementById("barMedRisk").style.width = medPct + "%";
+    document.getElementById("pctLowRisk").innerText = lowPct + "%";
+    document.getElementById("barLowRisk").style.width = lowPct + "%";
+  }
+
+  document.getElementById("analyticsAvgAiScore").innerText = avgAi + "%";
+
+  const tbody = document.getElementById("analyticsStudentTable");
+  tbody.innerHTML = "";
+
+  students.forEach(st => {
+    const studentSubs = submissionsDatabase.filter(s => s.matric.toLowerCase() === st.matric.toLowerCase());
+    const analyzedSubs = studentSubs.filter(s => s.analyzed);
+    
+    let stAvgAi = "N/A";
+    if(analyzedSubs.length > 0){
+      stAvgAi = Math.round(analyzedSubs.reduce((a, b) => a + b.ai, 0) / analyzedSubs.length) + "%";
+    }
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${st.name}</td>
+      <td>${st.matric}</td>
+      <td>${studentSubs.length}</td>
+      <td>${stAvgAi}</td>
+      <td>${st.lastActive}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderAdminUsers(){
+  document.getElementById("adminTotalUsers").innerText = usersDatabase.length;
+  document.getElementById("adminStudentCount").innerText = usersDatabase.filter(u => u.role === 'student').length;
+  document.getElementById("adminLecturerCount").innerText = usersDatabase.filter(u => u.role === 'lecturer').length;
+  document.getElementById("adminAdminCount").innerText = usersDatabase.filter(u => u.role === 'admin').length;
+
+  const tbody = document.getElementById("adminUserTable");
+  tbody.innerHTML = "";
+
+  usersDatabase.forEach((u, index) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${u.name}</td>
+      <td>${u.matric}</td>
+      <td>${u.email}</td>
+      <td><strong style="text-transform:capitalize;">${u.role}</strong></td>
+      <td>
+        <button class="btn-danger" onclick="deleteUser(${index})">Remove</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function deleteUser(index){
+  if(confirm(`Remove account for ${usersDatabase[index].name}?`)){
+    usersDatabase.splice(index, 1);
+    renderAdminUsers();
+  }
+}
+
+function renderUniversityAnalytics(){
+  document.getElementById("uniTotalSubmissions").innerText = submissionsDatabase.length;
+}
+
+function generateReport(reportTitle){
+  window.print();
+}
+</script>
+
+</body>
+</html>
